@@ -1,14 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f4ed;
-  --foreground: #1c1b18;
-  --panel: #fffdf7;
-  --line: #ddd4c3;
-  --muted: #6e675c;
+  --background: #f3f0e8;
+  --foreground: #17201c;
+  --panel: #fffefa;
+  --line: #d8d0c1;
+  --muted: #746c5e;
   --accent: #0f766e;
-  --accent-strong: #115e59;
-  --gold: #b7791f;
+  --accent-strong: #0b5f59;
+  --ink: #24352f;
+  --gold: #b88422;
+  --rose: #9f3a4a;
 }
 
 * {
@@ -19,10 +21,11 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    linear-gradient(180deg, rgba(15, 118, 110, 0.08), transparent 360px),
+    linear-gradient(135deg, rgba(15, 118, 110, 0.12), transparent 34rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent 20rem),
     var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-noto-kufi-arabic), "Segoe UI", Arial, Helvetica, sans-serif;
 }
 
 button,
@@ -41,7 +44,30 @@ button {
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
+.calendar-cell {
+  min-height: 4.8rem;
+}
+
 .focus-ring:focus-visible {
   outline: 3px solid rgba(15, 118, 110, 0.3);
   outline-offset: 2px;
+}
+
+.page-shell {
+  background-image:
+    linear-gradient(rgba(23, 32, 28, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(23, 32, 28, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+@media (min-width: 640px) {
+  .calendar-cell {
+    min-height: 6.25rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .calendar-cell {
+    min-height: 7rem;
+  }
 }
