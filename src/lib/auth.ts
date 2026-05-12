@@ -18,6 +18,7 @@ const socialProviders = hasGoogleAuth
 
 export const adminEmail =
   process.env.ADMIN_EMAIL?.toLowerCase() ?? "afandi.ahmad21@gmail.com";
+export const adminPassword = process.env.ADMIN_PASSWORD ?? "admin123";
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
