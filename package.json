@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "check:db": "node scripts/check-database.mjs",
     "start": "next start",
     "lint": "eslint"
   },

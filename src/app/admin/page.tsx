@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarPlus, Database, Home, Plus, Save, Trash2 } from "lucide-react";
+import { CalendarPlus, Database, Home, Plus } from "lucide-react";
 import {
   createAcademicYear,
   createCategory,
@@ -11,16 +11,23 @@ import {
   updateCategory,
   updateEvent
 } from "@/app/admin/actions";
+import { FormSubmitButton } from "@/components/form-submit-button";
 import { requireAdmin } from "@/lib/admin";
 import { getAdminData } from "@/lib/db";
 import type { AcademicYear, CalendarEvent, Category } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ error?: string }>;
+}) {
   await requireAdmin();
+  const params = await searchParams;
   const { academicYears, activeYear, categories, events, usingSampleData } =
     await getAdminData();
+  const formsDisabled = usingSampleData;
 
   return (
     <main className="min-h-screen px-4 py-5 sm:px-6 lg:px-8">
@@ -48,6 +55,11 @@ export default async function AdminPage() {
             sesuai `supabase/schema.sql`.
           </div>
         ) : null}
+        {params?.error === "database" ? (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            Data gagal disimpan. Periksa koneksi database Supabase dan coba lagi.
+          </div>
+        ) : null}
 
         <section className="grid gap-5 lg:grid-cols-3">
           <FormCard title="Tahun Akademik Baru" icon={<Database size={18} />}>
@@ -56,7 +68,7 @@ export default async function AdminPage() {
               <Input label="Tanggal mulai" name="start_date" required type="date" />
               <Input label="Tanggal selesai" name="end_date" required type="date" />
               <Checkbox label="Jadikan aktif" name="is_active" />
-              <SubmitButton label="Tambah Tahun" />
+              <SubmitButton disabled={formsDisabled} label="Tambah Tahun" />
             </form>
           </FormCard>
 
@@ -65,7 +77,7 @@ export default async function AdminPage() {
               <Input label="Nama Arab" name="name_ar" placeholder="اختبار" required />
               <Input label="Nama Indonesia" name="name_id" placeholder="Ujian" required />
               <Input label="Warna" name="color" required type="color" defaultValue="#0f766e" />
-              <SubmitButton label="Tambah Kategori" />
+              <SubmitButton disabled={formsDisabled} label="Tambah Kategori" />
             </form>
           </FormCard>
 
@@ -74,17 +86,19 @@ export default async function AdminPage() {
               academicYears={academicYears}
               categories={categories}
               defaultYearId={activeYear.id}
+              disabled={formsDisabled || academicYears.length === 0}
               submitLabel="Tambah Event"
             />
           </FormCard>
         </section>
 
-        <ManageYears years={academicYears} />
-        <ManageCategories categories={categories} />
+        <ManageYears disabled={formsDisabled} years={academicYears} />
+        <ManageCategories categories={categories} disabled={formsDisabled} />
         <ManageEvents
           academicYears={academicYears}
           activeYear={activeYear}
           categories={categories}
+          disabled={formsDisabled}
           events={events}
         />
       </section>
@@ -92,7 +106,7 @@ export default async function AdminPage() {
   );
 }
 
-function ManageYears({ years }: { years: AcademicYear[] }) {
+function ManageYears({ disabled, years }: { disabled: boolean; years: AcademicYear[] }) {
   return (
     <section className="rounded-md border border-[var(--line)] bg-[var(--panel)] p-4">
       <h2 className="mb-4 text-lg font-bold">Kelola Tahun Akademik</h2>
@@ -106,12 +120,12 @@ function ManageYears({ years }: { years: AcademicYear[] }) {
               <Input defaultValue={year.endDate} label="Selesai" name="end_date" required type="date" />
               <Checkbox defaultChecked={year.isActive} label="Aktif" name="is_active" />
               <div className="flex gap-2 md:col-span-2">
-                <IconButton icon={<Save size={15} />} label="Simpan" />
+                <IconButton disabled={disabled} icon="save" label="Simpan" />
               </div>
             </form>
             <form action={deleteAcademicYear} className="mt-2">
               <input name="id" type="hidden" value={year.id} />
-              <DangerButton label="Hapus Tahun" />
+              <DangerButton disabled={disabled} label="Hapus Tahun" />
             </form>
           </article>
         ))}
@@ -120,7 +134,7 @@ function ManageYears({ years }: { years: AcademicYear[] }) {
   );
 }
 
-function ManageCategories({ categories }: { categories: Category[] }) {
+function ManageCategories({ categories, disabled }: { categories: Category[]; disabled: boolean }) {
   return (
     <section className="rounded-md border border-[var(--line)] bg-[var(--panel)] p-4">
       <h2 className="mb-4 text-lg font-bold">Kelola Kategori</h2>
@@ -133,12 +147,12 @@ function ManageCategories({ categories }: { categories: Category[] }) {
               <Input defaultValue={category.nameId} label="Nama Indonesia" name="name_id" required />
               <Input defaultValue={category.color} label="Warna" name="color" required type="color" />
               <div className="flex items-end">
-                <IconButton icon={<Save size={15} />} label="Simpan" />
+                <IconButton disabled={disabled} icon="save" label="Simpan" />
               </div>
             </form>
             <form action={deleteCategory} className="mt-2">
               <input name="id" type="hidden" value={category.id} />
-              <DangerButton label="Hapus Kategori" />
+              <DangerButton disabled={disabled} label="Hapus Kategori" />
             </form>
           </article>
         ))}
@@ -151,11 +165,13 @@ function ManageEvents({
   academicYears,
   activeYear,
   categories,
+  disabled,
   events
 }: {
   academicYears: AcademicYear[];
   activeYear: AcademicYear;
   categories: Category[];
+  disabled: boolean;
   events: CalendarEvent[];
 }) {
   return (
@@ -175,12 +191,13 @@ function ManageEvents({
               <EventForm
                 academicYears={academicYears}
                 categories={categories}
+                disabled={disabled}
                 event={event}
                 submitLabel="Simpan Event"
               />
               <form action={deleteEvent} className="mt-2">
                 <input name="id" type="hidden" value={event.id} />
-                <DangerButton label="Hapus Event" />
+                <DangerButton disabled={disabled} label="Hapus Event" />
               </form>
             </div>
           </details>
@@ -194,12 +211,14 @@ function EventForm({
   academicYears,
   categories,
   defaultYearId,
+  disabled,
   event,
   submitLabel
 }: {
   academicYears: AcademicYear[];
   categories: Category[];
   defaultYearId?: string;
+  disabled: boolean;
   event?: CalendarEvent;
   submitLabel: string;
 }) {
@@ -247,7 +266,7 @@ function EventForm({
       <Input defaultValue={event?.endDate ?? ""} label="Tanggal selesai" name="end_date" type="date" />
       <Checkbox defaultChecked={event?.isImportant} label="Tampilkan di sorotan penting" name="is_important" />
       <div className="flex items-end">
-        <IconButton icon={<Save size={15} />} label={submitLabel} />
+        <IconButton disabled={disabled} icon="save" label={submitLabel} />
       </div>
     </form>
   );
@@ -315,37 +334,43 @@ function Checkbox({
   );
 }
 
-function SubmitButton({ label }: { label: string }) {
+function SubmitButton({ disabled, label }: { disabled?: boolean; label: string }) {
   return (
-    <button
+    <FormSubmitButton
       className="focus-ring inline-flex w-full justify-center rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-bold text-white hover:bg-[var(--accent-strong)]"
-      type="submit"
-    >
-      {label}
-    </button>
+      disabled={disabled}
+      label={label}
+    />
   );
 }
 
-function IconButton({ icon, label }: { icon: React.ReactNode; label: string }) {
+function IconButton({
+  disabled,
+  icon,
+  label
+}: {
+  disabled?: boolean;
+  icon: "save";
+  label: string;
+}) {
   return (
-    <button
+    <FormSubmitButton
       className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-bold text-white hover:bg-[var(--accent-strong)]"
-      type="submit"
-    >
-      {icon}
-      {label}
-    </button>
+      disabled={disabled}
+      icon={icon}
+      label={label}
+    />
   );
 }
 
-function DangerButton({ label }: { label: string }) {
+function DangerButton({ disabled, label }: { disabled?: boolean; label: string }) {
   return (
-    <button
+    <FormSubmitButton
       className="focus-ring inline-flex items-center gap-2 rounded-md border border-red-200 px-3 py-2 text-sm font-semibold text-red-700"
-      type="submit"
-    >
-      <Trash2 size={15} />
-      {label}
-    </button>
+      disabled={disabled}
+      icon="trash"
+      label={label}
+      pendingLabel="Menghapus..."
+    />
   );
 }
