@@ -11,7 +11,8 @@
   "dependencies": {
     "@better-auth/core": "1.6.9",
     "@better-auth/utils": "0.4.0",
-    "@supabase/supabase-js": "latest",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.105.4",
     "better-auth": "1.6.9",
     "clsx": "latest",
     "lucide-react": "latest",
