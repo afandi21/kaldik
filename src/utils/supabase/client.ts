@@ -1,16 +1,8 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { getSupabasePublicEnv } from "@/lib/supabase-env";
 
 export const createClient = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const { url, anonKey } = getSupabasePublicEnv();
 
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error(
-      "Supabase env belum lengkap. Pastikan NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY terisi."
-    );
-  }
-
-  return createBrowserClient(supabaseUrl, supabaseKey);
+  return createBrowserClient(url, anonKey);
 };

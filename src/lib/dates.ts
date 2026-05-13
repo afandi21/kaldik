@@ -28,8 +28,18 @@ const hijriFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-tbla", {
   month: "short"
 });
 
+export function isIsoDate(value: string) {
+  return /^\d{4}-\d{2}-\d{2}$/u.test(value.trim());
+}
+
 export function toDate(value: string) {
-  return new Date(`${value}T00:00:00`);
+  const normalized = String(value ?? "").trim();
+  if (!normalized || !isIsoDate(normalized)) {
+    return new Date("invalid");
+  }
+
+  const date = new Date(`${normalized}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? new Date("invalid") : date;
 }
 
 export function toIsoDate(date: Date) {
@@ -41,7 +51,12 @@ export function toIsoDate(date: Date) {
 }
 
 export function formatDate(value: string, locale: LocaleMode) {
-  return dateFormatters[locale].format(toDate(value));
+  const date = toDate(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value ?? "");
+  }
+
+  return dateFormatters[locale].format(date);
 }
 
 export function formatMonth(date: Date, locale: LocaleMode) {
@@ -59,6 +74,10 @@ export function formatHijri(value: string) {
 export function monthStartsBetween(startDate: string, endDate: string) {
   const start = toDate(startDate);
   const end = toDate(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return [];
+  }
+
   const months: Date[] = [];
   const current = new Date(start.getFullYear(), start.getMonth(), 1);
 
@@ -92,8 +111,22 @@ export function calendarCellsForMonth(month: Date) {
 }
 
 export function eventTouchesDate(event: CalendarEvent, dateIso: string) {
-  const end = event.endDate ?? event.startDate;
-  return event.startDate <= dateIso && end >= dateIso;
+  const start = toDate(event.startDate);
+  if (Number.isNaN(start.getTime())) {
+    return false;
+  }
+
+  const end = event.endDate ? toDate(event.endDate) : start;
+  if (Number.isNaN(end.getTime())) {
+    return false;
+  }
+
+  const date = toDate(dateIso);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  return toIsoDate(start) <= toIsoDate(date) && toIsoDate(end) >= toIsoDate(date);
 }
 
 export function eventText(event: CalendarEvent, locale: LocaleMode) {

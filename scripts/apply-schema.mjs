@@ -24,14 +24,16 @@ function loadEnvFile(path) {
 loadEnvFile(".env.local");
 loadEnvFile(".env");
 
-if (!process.env.DATABASE_URL) {
-  console.error("DATABASE_URL belum dikonfigurasi.");
+const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
+
+if (!connectionString) {
+  console.error("DATABASE_URL atau DIRECT_URL belum dikonfigurasi.");
   process.exit(1);
 }
 
 const client = new Client({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL.includes("supabase.co")
+  connectionString,
+  ssl: connectionString.includes("supabase.co")
     ? { rejectUnauthorized: false }
     : undefined,
   connectionTimeoutMillis: 15000

@@ -1,13 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { getSupabasePublicEnv } from "@/lib/supabase-env";
 
 export const updateSession = async (request: NextRequest) => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey =
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
+  let env: ReturnType<typeof getSupabasePublicEnv>;
+  try {
+    env = getSupabasePublicEnv();
+  } catch {
     return NextResponse.next({
       request: {
         headers: request.headers
@@ -22,7 +21,7 @@ export const updateSession = async (request: NextRequest) => {
   });
 
   try {
-    const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    const supabase = createServerClient(env.url, env.anonKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll();

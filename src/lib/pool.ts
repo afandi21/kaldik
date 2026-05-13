@@ -7,17 +7,19 @@ let pool: pg.Pool | null = null;
 
 /**
  * Returns a shared connection pool.
- * Both `db.ts` and `auth.ts` should use this to avoid creating duplicate pools.
- * Returns `null` when `DATABASE_URL` is not configured (graceful fallback).
+ * Prefer DATABASE_URL (pooler) for runtime stability.
+ * Returns `null` when neither DATABASE_URL nor DIRECT_URL is configured.
  */
 export function getPool(): pg.Pool | null {
-  if (!process.env.DATABASE_URL) {
+  const connectionString = process.env.DATABASE_URL ?? process.env.DIRECT_URL;
+
+  if (!connectionString) {
     return null;
   }
 
   pool ??= new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL.includes("supabase.co")
+    connectionString,
+    ssl: connectionString.includes("supabase.co")
       ? { rejectUnauthorized: false }
       : undefined,
     max: 5,

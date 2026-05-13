@@ -24,14 +24,16 @@ function loadEnvFile(path) {
 loadEnvFile(".env.local");
 loadEnvFile(".env");
 
-if (!process.env.DATABASE_URL) {
-  console.error("DATABASE_URL belum dikonfigurasi.");
+const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
+
+if (!connectionString) {
+  console.error("DATABASE_URL atau DIRECT_URL belum dikonfigurasi.");
   process.exit(1);
 }
 
 const client = new Client({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL.includes("supabase.co")
+  connectionString,
+  ssl: connectionString.includes("supabase.co")
     ? { rejectUnauthorized: false }
     : undefined,
   connectionTimeoutMillis: 15000
@@ -51,7 +53,11 @@ try {
     `database_ok academic_years=${counts.academic_years} categories=${counts.categories} events=${counts.events}`
   );
 } catch (error) {
-  console.error(error instanceof Error ? error.message : "Database check failed.");
+  console.error(
+    error instanceof Error
+      ? `${error.message}\nHint: gunakan DIRECT_URL (5432) untuk migrasi/schema, DATABASE_URL (6543) untuk runtime app.`
+      : "Database check failed."
+  );
   process.exitCode = 1;
 } finally {
   await client.end().catch(() => undefined);

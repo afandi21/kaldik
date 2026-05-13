@@ -7,15 +7,13 @@
     "build": "next build",
     "check:db": "node scripts/check-database.mjs",
     "db:setup": "node scripts/apply-schema.mjs",
+    "db:seed-admin": "node scripts/seed-admin-user.mjs",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
-    "@better-auth/core": "1.6.9",
-    "@better-auth/utils": "0.4.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
-    "better-auth": "1.6.9",
     "clsx": "latest",
     "lucide-react": "latest",
     "next": "16.2.5",
@@ -31,6 +29,7 @@
     "@types/react-dom": "latest",
     "eslint": "^9.39.1",
     "eslint-config-next": "latest",
+    "prisma": "^7.8.0",
     "tailwindcss": "latest",
     "typescript": "latest"
   }

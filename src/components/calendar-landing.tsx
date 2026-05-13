@@ -2,7 +2,6 @@
 
 import {
   CalendarDays,
-  CircleAlert,
   Languages,
   LogIn,
   Sparkles,
@@ -28,14 +27,12 @@ type CalendarLandingProps = {
   academicYear: AcademicYear;
   categories: Category[];
   events: CalendarEvent[];
-  usingSampleData: boolean;
 };
 
 export function CalendarLanding({
   academicYear,
   categories,
-  events,
-  usingSampleData
+  events
 }: CalendarLandingProps) {
   const [locale, setLocale] = useState<LocaleMode>("ar");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -113,17 +110,6 @@ export function CalendarLanding({
             </div>
           </div>
         </header>
-
-        {usingSampleData ? (
-          <div className="flex items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            <CircleAlert className="mt-0.5 shrink-0" size={18} />
-            <p>
-              {locale === "ar"
-                ? "يعرض هذا الموقع بيانات تجريبية لأن قاعدة البيانات لم يتم إعدادها بعد."
-                : "Aplikasi sedang menampilkan data contoh karena database belum dikonfigurasi."}
-            </p>
-          </div>
-        ) : null}
 
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0 rounded-md border border-[var(--line)] bg-[var(--panel)] p-2 shadow-sm sm:p-4">

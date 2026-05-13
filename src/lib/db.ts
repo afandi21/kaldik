@@ -1,33 +1,20 @@
 import "server-only";
 import pg from "pg";
 import type { AcademicYear, CalendarEvent, Category } from "@/lib/types";
-import { sampleCategories, sampleEvents, sampleYear } from "@/lib/sample-data";
+import { getPool } from "@/lib/pool";
 
-const { Pool } = pg;
-
-let pool: pg.Pool | null = null;
-
-function getPool() {
-  if (!process.env.DATABASE_URL) {
-    return null;
-  }
-
-  pool ??= new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL.includes("supabase.co")
-      ? { rejectUnauthorized: false }
-      : undefined
-  });
-
-  return pool;
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value
+  );
 }
 
 function mapYear(row: Record<string, unknown>): AcademicYear {
   return {
     id: String(row.id),
     name: String(row.name),
-    startDate: String(row.start_date).slice(0, 10),
-    endDate: String(row.end_date).slice(0, 10),
+    startDate: row.start_date ? String(row.start_date).slice(0, 10) : "",
+    endDate: row.end_date ? String(row.end_date).slice(0, 10) : "",
     isActive: Boolean(row.is_active)
   };
 }
@@ -60,30 +47,40 @@ function mapEvent(row: Record<string, unknown>): CalendarEvent {
     titleId: String(row.title_id),
     descriptionAr: row.description_ar ? String(row.description_ar) : null,
     descriptionId: row.description_id ? String(row.description_id) : null,
-    startDate: String(row.start_date).slice(0, 10),
+    startDate: row.start_date ? String(row.start_date).slice(0, 10) : "",
     endDate: row.end_date ? String(row.end_date).slice(0, 10) : null,
     isImportant: Boolean(row.is_important),
     category
   };
 }
 
-export async function getCalendarData() {
-  const client = getPool();
-
-  if (!client) {
-    return {
-      academicYear: sampleYear,
-      categories: sampleCategories,
-      events: sampleEvents,
-      usingSampleData: true
-    };
+function getRequiredPool() {
+  const pool = getPool();
+  if (!pool) {
+    throw new Error("DATABASE_URL belum dikonfigurasi.");
   }
+  return pool;
+}
+
+export async function getCalendarData() {
+  const client = getRequiredPool();
 
   try {
-    const activeYear = await client.query(
-      "select * from academic_years where is_active = true order by created_at desc limit 1"
+    const selectedYear = await client.query(
+      `select *
+       from academic_years
+       order by is_active desc, start_date desc, created_at desc
+       limit 1`
     );
-    const year = activeYear.rows[0] ? mapYear(activeYear.rows[0]) : sampleYear;
+    const year = selectedYear.rows[0] ? mapYear(selectedYear.rows[0]) : null;
+    if (!year) {
+      throw new Error("Tabel academic_years kosong. Tambahkan minimal satu tahun akademik.");
+    }
+    if (!isUuid(year.id)) {
+      throw new Error(
+        `ID tahun akademik tidak valid (${year.id}). Restart dev server untuk memuat kode terbaru dan pastikan tidak ada fallback data lama.`
+      );
+    }
 
     const [categories, events] = await Promise.all([
       client.query("select * from categories order by name_id asc"),
@@ -104,39 +101,31 @@ export async function getCalendarData() {
     return {
       academicYear: year,
       categories: categories.rows.map(mapCategory),
-      events: events.rows.map(mapEvent),
-      usingSampleData: false
+      events: events.rows.map(mapEvent)
     };
   } catch (error) {
     console.error("Failed to load calendar data", error);
-    return {
-      academicYear: sampleYear,
-      categories: sampleCategories,
-      events: sampleEvents,
-      usingSampleData: true
-    };
+    throw error;
   }
 }
 
 export async function getAdminData() {
-  const client = getPool();
-
-  if (!client) {
-    return {
-      academicYears: [sampleYear],
-      activeYear: sampleYear,
-      categories: sampleCategories,
-      events: sampleEvents,
-      usingSampleData: true
-    };
-  }
+  const client = getRequiredPool();
 
   try {
     const yearsResult = await client.query(
       "select * from academic_years order by start_date desc, created_at desc"
     );
     const academicYears = yearsResult.rows.map(mapYear);
-    const activeYear = academicYears.find((year) => year.isActive) ?? academicYears[0] ?? sampleYear;
+    const activeYear = academicYears.find((year) => year.isActive) ?? academicYears[0] ?? null;
+    if (!activeYear) {
+      throw new Error("Tabel academic_years kosong. Tambahkan data tahun akademik terlebih dulu.");
+    }
+    if (!isUuid(activeYear.id)) {
+      throw new Error(
+        `ID tahun akademik tidak valid (${activeYear.id}). Restart dev server untuk memuat kode terbaru dan pastikan tidak ada fallback data lama.`
+      );
+    }
 
     const [categories, events] = await Promise.all([
       client.query("select * from categories order by name_id asc"),
@@ -158,18 +147,11 @@ export async function getAdminData() {
       academicYears,
       activeYear,
       categories: categories.rows.map(mapCategory),
-      events: events.rows.map(mapEvent),
-      usingSampleData: false
+      events: events.rows.map(mapEvent)
     };
   } catch (error) {
     console.error("Failed to load admin data", error);
-    return {
-      academicYears: [sampleYear],
-      activeYear: sampleYear,
-      categories: sampleCategories,
-      events: sampleEvents,
-      usingSampleData: true
-    };
+    throw error;
   }
 }
 
@@ -177,11 +159,7 @@ export async function queryDatabase<T extends pg.QueryResultRow = pg.QueryResult
   text: string,
   values: Array<string | boolean | null> = []
 ) {
-  const client = getPool();
-
-  if (!client) {
-    throw new Error("DATABASE_URL belum dikonfigurasi.");
-  }
+  const client = getRequiredPool();
 
   const result = await client.query<T>(text, values);
   return result.rows;
