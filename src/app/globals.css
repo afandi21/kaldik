@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f3f0e8;
-  --foreground: #17201c;
-  --panel: #fffefa;
-  --line: #d8d0c1;
-  --muted: #746c5e;
-  --accent: #0f766e;
-  --accent-strong: #0b5f59;
-  --ink: #24352f;
-  --gold: #b88422;
-  --rose: #9f3a4a;
+  --background: #ffffff;
+  --foreground: #111827;
+  --panel: #ffffff;
+  --line: #dee3e9;
+  --muted: #5f6673;
+  --accent: #0064e0;
+  --accent-strong: #004bb5;
+  --ink: #000000;
+  --gold: #c58b00;
+  --rose: #b42342;
 }
 
 * {
@@ -20,12 +20,12 @@
 body {
   min-height: 100vh;
   margin: 0;
-  background:
-    linear-gradient(135deg, rgba(15, 118, 110, 0.12), transparent 34rem),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent 20rem),
-    var(--background);
+  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-noto-kufi-arabic), "Segoe UI", Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.16px;
 }
 
 button,
@@ -49,15 +49,24 @@ button {
 }
 
 .focus-ring:focus-visible {
-  outline: 3px solid rgba(15, 118, 110, 0.3);
+  outline: 3px solid rgba(0, 100, 224, 0.24);
   outline-offset: 2px;
 }
 
 .page-shell {
-  background-image:
-    linear-gradient(rgba(23, 32, 28, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(23, 32, 28, 0.035) 1px, transparent 1px);
-  background-size: 32px 32px;
+  background: #ffffff;
+}
+
+.meta-display {
+  font-feature-settings: "ss01" 1, "ss02" 1;
+  font-weight: 500;
+  letter-spacing: -0.16px;
+}
+
+.meta-subhead {
+  font-feature-settings: "ss01" 1, "ss02" 1;
+  font-weight: 300;
+  letter-spacing: -0.16px;
 }
 
 @media (min-width: 640px) {

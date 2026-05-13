@@ -14,6 +14,7 @@ import { EditYearButton } from "@/components/edit-year-button";
 import { FormSubmitButton } from "@/components/form-submit-button";
 import { UserMenu } from "@/components/user-menu";
 import { requireAdmin } from "@/lib/admin";
+import { formatDate } from "@/lib/dates";
 import { getAdminData } from "@/lib/db";
 import type { AcademicYear, CalendarEvent, Category } from "@/lib/types";
 
@@ -56,25 +57,25 @@ export default async function AdminPage({
   ];
 
   return (
-    <main className="min-h-screen bg-[var(--background)]">
-      <header className="border-b border-[var(--line)] bg-[var(--panel)] sticky top-0 z-40">
-        <section className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <main className="min-h-screen bg-white text-[var(--foreground)]">
+      <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-white/95 backdrop-blur">
+        <section className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-sm font-semibold text-[var(--accent-strong)]">Dashboard Admin</p>
-              <h1 className="mt-1 text-2xl font-bold">Kalender Akademik</h1>
+              <p className="text-sm font-medium text-[var(--muted)]">Dashboard Admin</p>
+              <h1 className="meta-display mt-1 text-3xl leading-tight text-[var(--ink)]">Kalender Akademik</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="inline-flex items-center gap-2 rounded-md border border-[var(--line)] bg-white px-3 py-2 text-xs font-semibold">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs font-semibold">
                 <span
                   className={`inline-block h-2.5 w-2.5 rounded-full ${
-                    isServerConnected ? "bg-emerald-500" : "bg-red-500"
+                    isServerConnected ? "bg-emerald-500" : "bg-red-600"
                   }`}
                 />
                 <span>{isServerConnected ? "Terhubung" : "Terputus"}</span>
               </div>
               <Link
-                className="focus-ring inline-flex items-center gap-2 rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm font-semibold"
+                className="focus-ring inline-flex items-center gap-2 rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800"
                 href="/"
               >
                 <Home size={16} />
@@ -84,15 +85,15 @@ export default async function AdminPage({
             </div>
           </div>
 
-          <div className="flex gap-1 border-b border-[var(--line)] -mb-4 overflow-x-auto">
+          <div className="flex gap-2 overflow-x-auto rounded-full border border-[var(--line)] bg-white p-1">
             {tabs.map((tab) => (
               <Link
                 key={tab.id}
                 href={`/admin?tab=${tab.id}`}
-                className={`px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition $
+                className={`rounded-full px-5 py-2.5 text-sm font-semibold whitespace-nowrap transition ${
                   currentTab === tab.id
-                    ? "border-[var(--accent)] text-[var(--accent)]"
-                    : "border-transparent text-[var(--muted)] hover:text-[var(--text)]"
+                    ? "bg-black text-white"
+                    : "text-[var(--muted)] hover:bg-neutral-50 hover:text-[var(--ink)]"
                 }`}
               >
                 {tab.label}
@@ -102,14 +103,14 @@ export default async function AdminPage({
         </section>
       </header>
 
-      <section className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
+      <section className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
         {!isServerConnected && (
-          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <div className="rounded-[32px] border border-red-200 bg-red-50 px-8 py-5 text-sm text-red-800">
             Database belum tersambung: {connectionMessage}
           </div>
         )}
         {params?.error === "database" && (
-          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          <div className="rounded-[32px] border border-red-200 bg-red-50 px-8 py-5 text-sm font-semibold text-red-700">
             Data gagal disimpan. Periksa koneksi database Supabase dan coba lagi.
           </div>
         )}
@@ -174,9 +175,9 @@ export default async function AdminPage({
 
 function ManageYears({ disabled, years }: { disabled: boolean; years: AcademicYear[] }) {
   return (
-    <section className="rounded-md border border-[var(--line)] bg-[var(--panel)] p-4">
-      <h2 className="mb-4 text-lg font-bold">Daftar Tahun Akademik</h2>
-      <div className="space-y-3">
+    <section className="rounded-[32px] border border-[var(--line)] bg-white p-8">
+      <h2 className="meta-display mb-6 text-2xl leading-tight text-[var(--ink)]">Daftar Tahun Akademik</h2>
+      <div className="divide-y divide-[var(--line)]">
         {years.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">Belum ada tahun akademik.</p>
         ) : (
@@ -190,32 +191,28 @@ function ManageYears({ disabled, years }: { disabled: boolean; years: AcademicYe
 }
 
 function YearCard({ year, disabled }: { year: AcademicYear; disabled: boolean }) {
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return "—";
-    const [y, m, d] = dateStr.split("-");
-    return `${d}/${m}/${y}`;
-  };
-
   return (
-    <article className="rounded-md border border-[var(--line)] bg-white p-4">
+    <article className="py-6 first:pt-0 last:pb-0">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="grid gap-4 sm:grid-cols-3 flex-1">
+        <div className="grid flex-1 gap-4 sm:grid-cols-3">
           <div>
-            <p className="text-xs font-semibold text-[var(--muted)]">Nama</p>
-            <p className="mt-1 text-sm font-medium">{year.name}</p>
+            <p className="text-xs font-semibold uppercase text-[var(--muted)]">Nama</p>
+            <p className="mt-1 text-base font-medium text-[var(--ink)]">{year.name}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-[var(--muted)]">Mulai</p>
-            <p className="mt-1 text-sm font-medium">{formatDate(year.startDate)}</p>
+            <p className="text-xs font-semibold uppercase text-[var(--muted)]">Mulai</p>
+            <p className="mt-1 text-base font-normal">{formatDate(year.startDate, "id")}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-[var(--muted)]">Selesai</p>
-            <p className="mt-1 text-sm font-medium">{formatDate(year.endDate)}</p>
+            <p className="text-xs font-semibold uppercase text-[var(--muted)]">Selesai</p>
+            <p className="mt-1 text-base font-normal">{formatDate(year.endDate, "id")}</p>
           </div>
           <div className="sm:col-span-3">
-            <p className="text-xs font-semibold text-[var(--muted)]">Status</p>
-            <p className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold">
-              <span className={`inline-block h-1.5 w-1.5 rounded-full ${year.isActive ? "bg-emerald-500" : "bg-gray-400"}`} />
+            <p className="text-xs font-semibold uppercase text-[var(--muted)]">Status</p>
+            <p className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${
+              year.isActive ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+            }`}>
+              <span className={`inline-block h-1.5 w-1.5 rounded-full ${year.isActive ? "bg-emerald-500" : "bg-red-500"}`} />
               {year.isActive ? "Aktif" : "Tidak Aktif"}
             </p>
           </div>
@@ -231,22 +228,22 @@ function YearCard({ year, disabled }: { year: AcademicYear; disabled: boolean })
 
 function ManageCategories({ categories, disabled }: { categories: Category[]; disabled: boolean }) {
   return (
-    <section className="rounded-md border border-[var(--line)] bg-[var(--panel)] p-4">
-      <h2 className="mb-4 text-lg font-bold">Daftar Kategori</h2>
-      <div className="grid gap-3 lg:grid-cols-2">
+    <section className="rounded-[32px] border border-[var(--line)] bg-white p-8">
+      <h2 className="meta-display mb-6 text-2xl leading-tight text-[var(--ink)]">Daftar Kategori</h2>
+      <div className="grid gap-4 lg:grid-cols-2">
         {categories.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">Belum ada kategori.</p>
         ) : (
           categories.map((category) => (
-            <article className="rounded-md border border-[var(--line)] bg-white p-4" key={category.id}>
-              <form action={updateCategory} className="grid gap-3 sm:grid-cols-2 items-end">
+            <article className="rounded-[32px] border border-[var(--line)] bg-white p-8" key={category.id}>
+              <form action={updateCategory} className="grid gap-4 sm:grid-cols-2 items-end">
                 <input name="id" type="hidden" value={category.id} />
                 <Input defaultValue={category.nameAr} label="Nama Arab" name="name_ar" required />
                 <Input defaultValue={category.nameId} label="Nama Indonesia" name="name_id" required />
                 <Input defaultValue={category.color} label="Warna" name="color" required type="color" />
                 <div className="flex gap-2">
                   <IconButton disabled={disabled} icon="save" label="Simpan" />
-                  <DeleteButton action={deleteCategory} disabled={disabled} id={category.id} />
+                  <DeleteButton action={deleteCategory} disabled={disabled} id={category.id} useParentForm />
                 </div>
               </form>
             </article>
@@ -271,22 +268,22 @@ function ManageEvents({
   events: CalendarEvent[];
 }) {
   return (
-    <section className="rounded-md border border-[var(--line)] bg-[var(--panel)] p-4">
-      <div className="mb-4">
-        <h2 className="text-lg font-bold">Event Aktif</h2>
+    <section className="rounded-[32px] border border-[var(--line)] bg-white p-8">
+      <div className="mb-6">
+        <h2 className="meta-display text-2xl leading-tight text-[var(--ink)]">Event Aktif</h2>
         <p className="text-sm text-[var(--muted)]">{activeYear.name}</p>
       </div>
-      <div className="space-y-3">
+      <div className="divide-y divide-[var(--line)]">
         {events.length === 0 ? (
           <p className="text-sm text-[var(--muted)]">Belum ada event di tahun ini.</p>
         ) : (
           events.map((event) => (
-            <details className="rounded-md border border-[var(--line)] bg-white p-4 group" key={event.id}>
-              <summary className="cursor-pointer text-sm font-bold flex justify-between items-center">
+            <details className="group py-5 first:pt-0 last:pb-0" key={event.id}>
+              <summary className="flex cursor-pointer items-center justify-between gap-4 text-sm font-semibold text-[var(--ink)]">
                 <span>{event.startDate}{event.endDate ? ` - ${event.endDate}` : ""} · {event.titleId}</span>
                 <span className="text-xs text-[var(--muted)]">»</span>
               </summary>
-              <div className="mt-4 pt-4 border-t border-[var(--line)]">
+              <div className="mt-5 border-t border-[var(--line)] pt-5">
                 <EventForm
                   academicYears={academicYears}
                   categories={categories}
@@ -320,12 +317,12 @@ function EventForm({
   submitLabel: string;
 }) {
   return (
-    <form action={event ? updateEvent : createEvent} className="grid gap-3 sm:grid-cols-2">
+    <form action={event ? updateEvent : createEvent} className="grid gap-4 sm:grid-cols-2">
       {event && <input name="id" type="hidden" value={event.id} />}
-      <label className="block text-sm font-semibold">
+      <label className="block text-sm font-semibold text-[var(--ink)]">
         Tahun Akademik
         <select
-          className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2"
+          className="mt-2 h-11 w-full rounded-lg border border-[var(--line)] bg-white px-3 text-sm outline-none transition focus:border-[var(--accent)]"
           defaultValue={event?.academicYearId ?? defaultYearId}
           name="academic_year_id"
         >
@@ -336,10 +333,10 @@ function EventForm({
           ))}
         </select>
       </label>
-      <label className="block text-sm font-semibold">
+      <label className="block text-sm font-semibold text-[var(--ink)]">
         Kategori
         <select
-          className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2"
+          className="mt-2 h-11 w-full rounded-lg border border-[var(--line)] bg-white px-3 text-sm outline-none transition focus:border-[var(--accent)]"
           defaultValue={event?.categoryId ?? ""}
           name="category_id"
         >
@@ -375,10 +372,10 @@ function FormCard({
   title: string;
 }) {
   return (
-    <section className="rounded-md border border-[var(--line)] bg-[var(--panel)] p-4">
-      <div className="mb-4 flex items-center gap-2">
-        <span className="text-[var(--accent)]">{icon}</span>
-        <h2 className="font-bold">{title}</h2>
+    <section className="rounded-[32px] border border-[var(--line)] bg-white p-8">
+      <div className="mb-6 flex items-center gap-3">
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] text-[var(--ink)]">{icon}</span>
+        <h2 className="meta-display text-2xl leading-tight text-[var(--ink)]">{title}</h2>
       </div>
       {children}
     </section>
@@ -390,10 +387,10 @@ function Input({
   ...props
 }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
   return (
-    <label className="block text-sm font-semibold">
+    <label className="block text-sm font-semibold text-[var(--ink)]">
       {label}
       <input
-        className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2"
+        className="mt-2 h-11 w-full rounded-lg border border-[var(--line)] bg-white px-3 text-sm outline-none transition focus:border-[var(--accent)]"
         {...props}
       />
     </label>
@@ -405,10 +402,10 @@ function Textarea({
   ...props
 }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string }) {
   return (
-    <label className="block text-sm font-semibold">
+    <label className="block text-sm font-semibold text-[var(--ink)]">
       {label}
       <textarea
-        className="mt-1 min-h-20 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2"
+        className="mt-2 min-h-24 w-full rounded-lg border border-[var(--line)] bg-white px-3 py-3 text-sm outline-none transition focus:border-[var(--accent)]"
         {...props}
       />
     </label>
@@ -420,7 +417,7 @@ function Checkbox({
   ...props
 }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
   return (
-    <label className="flex items-center gap-2 text-sm font-semibold">
+    <label className="flex items-center gap-2 text-sm font-semibold text-[var(--ink)]">
       <input type="checkbox" {...props} />
       {label}
     </label>
@@ -430,7 +427,7 @@ function Checkbox({
 function SubmitButton({ disabled, label }: { disabled?: boolean; label: string }) {
   return (
     <FormSubmitButton
-      className="focus-ring inline-flex w-full justify-center rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-bold text-white hover:bg-[var(--accent-strong)]"
+      className="focus-ring inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)]"
       disabled={disabled}
       label={label}
     />
@@ -448,7 +445,7 @@ function IconButton({
 }) {
   return (
     <FormSubmitButton
-      className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-3 py-2 text-sm font-bold text-white hover:bg-[var(--accent-strong)]"
+      className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)]"
       disabled={disabled}
       icon={icon}
       label={label}
@@ -460,23 +457,34 @@ function DeleteButton({
   action,
   className,
   disabled,
-  id
+  id,
+  useParentForm = false
 }: {
   action: (formData: FormData) => Promise<void>;
   className?: string;
   disabled?: boolean;
   id: string;
+  useParentForm?: boolean;
 }) {
+  const button = (
+    <FormSubmitButton
+      className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-red-200 px-5 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+      disabled={disabled}
+      formAction={useParentForm ? action : undefined}
+      icon="trash"
+      label="Hapus"
+      pendingLabel="Menghapus..."
+    />
+  );
+
+  if (useParentForm) {
+    return button;
+  }
+
   return (
     <form action={action} className={className}>
       <input name="id" type="hidden" value={id} />
-      <FormSubmitButton
-        className="focus-ring inline-flex items-center gap-2 rounded-md border border-red-200 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-50"
-        disabled={disabled}
-        icon="trash"
-        label="Hapus"
-        pendingLabel="Menghapus..."
-      />
+      {button}
     </form>
   );
 }

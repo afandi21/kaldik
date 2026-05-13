@@ -9,12 +9,27 @@ function isUuid(value: string) {
   );
 }
 
+function normalizeDate(value: unknown) {
+  if (!value) {
+    return "";
+  }
+
+  if (value instanceof Date) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  return String(value).match(/^(\d{4})-(\d{2})-(\d{2})/u)?.[0] ?? "";
+}
+
 function mapYear(row: Record<string, unknown>): AcademicYear {
   return {
     id: String(row.id),
     name: String(row.name),
-    startDate: row.start_date ? String(row.start_date).slice(0, 10) : "",
-    endDate: row.end_date ? String(row.end_date).slice(0, 10) : "",
+    startDate: normalizeDate(row.start_date),
+    endDate: normalizeDate(row.end_date),
     isActive: Boolean(row.is_active)
   };
 }
@@ -47,8 +62,8 @@ function mapEvent(row: Record<string, unknown>): CalendarEvent {
     titleId: String(row.title_id),
     descriptionAr: row.description_ar ? String(row.description_ar) : null,
     descriptionId: row.description_id ? String(row.description_id) : null,
-    startDate: row.start_date ? String(row.start_date).slice(0, 10) : "",
-    endDate: row.end_date ? String(row.end_date).slice(0, 10) : null,
+    startDate: normalizeDate(row.start_date),
+    endDate: row.end_date ? normalizeDate(row.end_date) : null,
     isImportant: Boolean(row.is_important),
     category
   };

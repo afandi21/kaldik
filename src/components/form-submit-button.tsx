@@ -13,12 +13,14 @@ const icons = {
 export function FormSubmitButton({
   className,
   disabled,
+  formAction,
   icon,
   label,
   pendingLabel = "Menyimpan..."
 }: {
   className: string;
   disabled?: boolean;
+  formAction?: (formData: FormData) => void | Promise<void>;
   icon?: SubmitIcon;
   label: string;
   pendingLabel?: string;
@@ -27,7 +29,7 @@ export function FormSubmitButton({
   const Icon = icon ? icons[icon] : null;
 
   return (
-    <button className={className} disabled={disabled || pending} type="submit">
+    <button className={className} disabled={disabled || pending} formAction={formAction} type="submit">
       {Icon ? <Icon size={15} /> : null}
       {pending ? pendingLabel : label}
     </button>

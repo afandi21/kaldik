@@ -10,6 +10,15 @@ function value(formData: FormData, key: string) {
   return typeof item === "string" ? item.trim() : "";
 }
 
+function requiredValue(formData: FormData, key: string) {
+  const item = value(formData, key);
+  if (!item) {
+    throw new Error(`Field ${key} wajib diisi.`);
+  }
+
+  return item;
+}
+
 function optionalValue(formData: FormData, key: string) {
   const item = value(formData, key);
   return item.length > 0 ? item : null;
@@ -133,7 +142,8 @@ export async function createEvent(formData: FormData) {
 
 export async function updateEvent(formData: FormData) {
   await runAdminMutation(async () => {
-    await queryDatabase(
+    const id = requiredValue(formData, "id");
+    const rows = await queryDatabase<{ id: string }>(
       `update events
        set
         academic_year_id = $1,
@@ -145,21 +155,28 @@ export async function updateEvent(formData: FormData) {
         start_date = $7,
         end_date = $8,
         is_important = $9
-       where id = $10`,
+       where id = $10
+       returning id`,
       [
-        value(formData, "academic_year_id"),
+        requiredValue(formData, "academic_year_id"),
         optionalValue(formData, "category_id"),
-        value(formData, "title_ar"),
-        value(formData, "title_id"),
+        requiredValue(formData, "title_ar"),
+        requiredValue(formData, "title_id"),
         optionalValue(formData, "description_ar"),
         optionalValue(formData, "description_id"),
-        value(formData, "start_date"),
+        requiredValue(formData, "start_date"),
         optionalValue(formData, "end_date"),
         formData.get("is_important") === "on",
-        value(formData, "id")
+        id
       ]
     );
+
+    if (rows.length === 0) {
+      throw new Error(`Event ${id} tidak ditemukan atau tidak bisa diperbarui.`);
+    }
   });
+
+  redirect("/admin?tab=events");
 }
 
 export async function deleteEvent(formData: FormData) {

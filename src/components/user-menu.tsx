@@ -33,10 +33,10 @@ export function UserMenu() {
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3">
       <span className="text-sm text-[var(--muted)]">{session.user.email}</span>
       <button
-        className="focus-ring inline-flex items-center gap-2 rounded-md border border-[var(--line)] px-3 py-2 text-sm font-semibold"
+        className="focus-ring inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-neutral-50"
         disabled={isLoading}
         onClick={handleSignOut}
         type="button"
