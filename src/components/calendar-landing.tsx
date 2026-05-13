@@ -60,11 +60,34 @@ export function CalendarLanding({
   const selectedEvents = selectedDate
     ? events.filter((event) => eventTouchesDate(event, selectedDate))
     : [];
-  const importantEvents = events
-    .filter((event) => event.isImportant)
-    .slice()
-    .sort((a, b) => a.startDate.localeCompare(b.startDate))
-    .slice(0, 5);
+  
+  // Filter important events by current month
+  const importantEvents = useMemo(() => {
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+    
+    return events
+      .filter((event) => event.isImportant)
+      .filter((event) => {
+        // Check if event overlaps with current month
+        const eventStart = new Date(event.startDate);
+        const eventEnd = event.endDate ? new Date(event.endDate) : eventStart;
+        
+        // Event overlaps if:
+        // 1. Event starts in this month, OR
+        // 2. Event ends in this month, OR
+        // 3. Event spans across this month
+        return (
+          (eventStart.getFullYear() === currentYear && eventStart.getMonth() === currentMonth) ||
+          (eventEnd.getFullYear() === currentYear && eventEnd.getMonth() === currentMonth) ||
+          (eventStart < new Date(currentYear, currentMonth + 1, 0) && 
+           eventEnd > new Date(currentYear, currentMonth, 1))
+        );
+      })
+      .slice()
+      .sort((a, b) => a.startDate.localeCompare(b.startDate))
+      .slice(0, 5);
+  }, [events, currentDate]);
 
   const changeMonth = (offset: number) => {
     setCurrentDate((date) => new Date(date.getFullYear(), date.getMonth() + offset, 1));
@@ -432,16 +455,18 @@ function CalendarCell({
 
 function EventSummary({ event, locale }: { event: CalendarEvent; locale: LocaleMode }) {
   return (
-    <article className="rounded-2xl border border-white/15 bg-white/10 p-4">
-      <div className="mb-3 h-1.5 w-12 rounded-full" style={{ backgroundColor: event.category?.color ?? "#0064e0" }} />
-      <p className="text-xs font-semibold text-white/70">
+    <article className="rounded-xl border border-white/15 bg-white/8 p-4 transition hover:bg-white/12">
+      <div className="mb-3 h-1 w-10 rounded-full" style={{ backgroundColor: event.category?.color ?? "#0064e0" }} />
+      <p className="text-xs font-semibold leading-snug text-white/70">
         {formatDate(event.startDate, locale)}
         {event.endDate ? ` - ${formatDate(event.endDate, locale)}` : ""}
       </p>
-      <p className="mt-1 text-xs font-semibold text-white/70">
-        {calculateDuration(event.startDate, event.endDate, event.category)} hari aktif
-      </p>
-      <h3 className="mt-2 text-sm font-semibold leading-5 text-white">{eventText(event, locale)}</h3>
+      <h3 
+        className="mt-3 text-sm font-semibold leading-5 text-white" 
+        style={{ letterSpacing: "-0.14px" }}
+      >
+        {eventText(event, locale)}
+      </h3>
     </article>
   );
 }
