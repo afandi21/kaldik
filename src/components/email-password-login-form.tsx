@@ -7,8 +7,8 @@ import { createClient } from "@/utils/supabase/client";
 
 export function EmailPasswordLoginForm({ nextPath = "/admin" }: { nextPath?: string }) {
   const router = useRouter();
-  const [email, setEmail] = useState("afandi.ahmad21@gmail.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,25 +39,29 @@ export function EmailPasswordLoginForm({ nextPath = "/admin" }: { nextPath?: str
   }
 
   return (
-    <form className="space-y-3" onSubmit={handleSubmit}>
+    <form className="space-y-3" onSubmit={handleSubmit} autoComplete="off">
       <label className="block text-sm font-semibold">
         Email
         <input
-          className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm"
+          name="email"
+          className="mt-1 w-full rounded-lg border border-[var(--line)] bg-white px-3 text-sm h-11"
           onChange={(event) => setEmail(event.target.value)}
           required
           type="email"
           value={email}
+          autoComplete="off"
         />
       </label>
       <label className="block text-sm font-semibold">
         Password
         <input
-          className="mt-1 w-full rounded-md border border-[var(--line)] bg-white px-3 py-2 text-sm"
+          name="password"
+          className="mt-1 w-full rounded-lg border border-[var(--line)] bg-white px-3 text-sm h-11"
           onChange={(event) => setPassword(event.target.value)}
           required
           type="password"
           value={password}
+          autoComplete="off"
         />
       </label>
       {error ? (
@@ -66,7 +70,7 @@ export function EmailPasswordLoginForm({ nextPath = "/admin" }: { nextPath?: str
         </p>
       ) : null}
       <button
-        className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-4 py-3 text-sm font-bold text-white hover:bg-[var(--accent-strong)] disabled:opacity-70"
+        className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#0064E0] px-6 py-3 text-sm font-bold text-white hover:bg-[#0056c9] disabled:opacity-70"
         disabled={isLoading}
         type="submit"
       >
