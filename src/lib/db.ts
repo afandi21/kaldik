@@ -97,7 +97,7 @@ export async function getCalendarData() {
       );
     }
 
-    const [categories, events] = await Promise.all([
+    const [categories, events, settings] = await Promise.all([
       client.query("select * from categories order by name_id asc"),
       client.query(
         `select
@@ -110,13 +110,17 @@ export async function getCalendarData() {
         where e.academic_year_id = $1
         order by e.start_date asc, e.title_id asc`,
         [year.id]
-      )
+      ),
+      client.query("select value from system_settings where key = 'HIJRI_OFFSET'")
     ]);
+
+    const hijriOffset = parseInt(settings.rows[0]?.value ?? "0", 10);
 
     return {
       academicYear: year,
       categories: categories.rows.map(mapCategory),
-      events: events.rows.map(mapEvent)
+      events: events.rows.map(mapEvent),
+      hijriOffset
     };
   } catch (error) {
     console.error("Failed to load calendar data", error);
@@ -142,7 +146,7 @@ export async function getAdminData() {
       );
     }
 
-    const [categories, events] = await Promise.all([
+    const [categories, events, settings] = await Promise.all([
       client.query("select * from categories order by name_id asc"),
       client.query(
         `select
@@ -155,14 +159,18 @@ export async function getAdminData() {
         where e.academic_year_id = $1
         order by e.start_date asc, e.title_id asc`,
         [activeYear.id]
-      )
+      ),
+      client.query("select value from system_settings where key = 'HIJRI_OFFSET'")
     ]);
+
+    const hijriOffset = parseInt(settings.rows[0]?.value ?? "0", 10);
 
     return {
       academicYears,
       activeYear,
       categories: categories.rows.map(mapCategory),
-      events: events.rows.map(mapEvent)
+      events: events.rows.map(mapEvent),
+      hijriOffset
     };
   } catch (error) {
     console.error("Failed to load admin data", error);

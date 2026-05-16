@@ -6,12 +6,12 @@ export const weekdayLabels: Record<LocaleMode, string[]> = {
 };
 
 const monthFormatters: Record<LocaleMode, Intl.DateTimeFormat> = {
-  ar: new Intl.DateTimeFormat("ar-SA", { month: "long", year: "numeric" }),
+  ar: new Intl.DateTimeFormat("ar-SA-u-nu-latn", { month: "long", year: "numeric" }),
   id: new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" })
 };
 
 const dateFormatters: Record<LocaleMode, Intl.DateTimeFormat> = {
-  ar: new Intl.DateTimeFormat("ar-SA", {
+  ar: new Intl.DateTimeFormat("ar-SA-u-nu-latn", {
     day: "numeric",
     month: "long",
     year: "numeric"
@@ -23,15 +23,18 @@ const dateFormatters: Record<LocaleMode, Intl.DateTimeFormat> = {
   })
 };
 
-const hijriFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-tbla", {
-  day: "numeric",
-  month: "short"
-});
+const hijriMonthFormatters: Record<LocaleMode, Intl.DateTimeFormat> = {
+  ar: new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", { month: "long" }),
+  id: new Intl.DateTimeFormat("id-ID-u-ca-islamic-umalqura", { month: "long" })
+};
 
-const hijriPartsFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-tbla", {
-  day: "numeric",
-  month: "long",
-  year: "numeric"
+const hijriYearFormatters: Record<LocaleMode, Intl.DateTimeFormat> = {
+  ar: new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-arab", { year: "numeric" }),
+  id: new Intl.DateTimeFormat("id-ID-u-ca-islamic-umalqura-nu-arab", { year: "numeric" })
+};
+
+const hijriDayFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-arab", {
+  day: "numeric"
 });
 
 export function isIsoDate(value: string) {
@@ -205,39 +208,54 @@ export function formatMonth(date: Date, locale: LocaleMode) {
   return monthFormatters[locale].format(date);
 }
 
-export function formatHijri(value: string) {
+export function formatHijri(value: string, locale: LocaleMode = "ar", hijriOffset = 0) {
   try {
-    return hijriFormatter.format(toDate(value));
+    const date = toDate(value);
+    if (Number.isNaN(date.getTime())) return "";
+    
+    const adjustedDate = new Date(date);
+    adjustedDate.setDate(adjustedDate.getDate() + hijriOffset);
+    
+    const day = hijriDayFormatter.format(adjustedDate);
+    const month = hijriMonthFormatters[locale].format(adjustedDate);
+    return `${day} ${month}`;
   } catch {
     return "";
   }
 }
 
-export function getHijriParts(value: string | Date) {
+export function getHijriParts(value: string | Date, locale: LocaleMode, hijriOffset = 0) {
   const date = value instanceof Date ? value : toDate(value);
   if (Number.isNaN(date.getTime())) {
     return { day: "", month: "", year: "" };
   }
 
-  const parts = hijriPartsFormatter.formatToParts(date);
+  const adjustedDate = new Date(date);
+  adjustedDate.setDate(adjustedDate.getDate() + hijriOffset);
 
   return {
-    day: parts.find((part) => part.type === "day")?.value ?? "",
-    month: parts.find((part) => part.type === "month")?.value ?? "",
-    year: parts.find((part) => part.type === "year")?.value ?? ""
+    day: hijriDayFormatter.format(adjustedDate),
+    month: hijriMonthFormatters[locale].format(adjustedDate),
+    year: hijriYearFormatters[locale].format(adjustedDate)
   };
 }
 
-export function formatHijriDay(value: string | Date) {
-  return getHijriParts(value).day;
+export function formatHijriDay(value: string | Date, hijriOffset = 0) {
+  // Always use Eastern Arabic numerals for Hijri days
+  const date = value instanceof Date ? value : toDate(value);
+  if (Number.isNaN(date.getTime())) return "";
+  
+  const adjustedDate = new Date(date);
+  adjustedDate.setDate(adjustedDate.getDate() + hijriOffset);
+  return hijriDayFormatter.format(adjustedDate);
 }
 
-export function formatMonthHeader(month: Date, cells: Date[], locale: LocaleMode) {
+export function formatMonthHeader(month: Date, cells: Date[], locale: LocaleMode, hijriOffset = 0) {
   const hijriMonths = new Set<string>();
   let hijriYear = "";
 
   cells.forEach((cell) => {
-    const parts = getHijriParts(cell);
+    const parts = getHijriParts(cell, locale, hijriOffset);
     if (parts.month) {
       hijriMonths.add(parts.month);
     }
@@ -247,9 +265,14 @@ export function formatMonthHeader(month: Date, cells: Date[], locale: LocaleMode
   });
 
   const hijriMonthText = Array.from(hijriMonths).join("/");
-  const hijriText = hijriMonthText ? `${hijriMonthText}${hijriYear ? ` ${hijriYear} هـ` : ""}` : "";
-
-  return `${formatMonth(month, locale)} م${hijriText ? ` ${hijriText}` : ""}`;
+  
+  if (locale === "ar") {
+    const hijriText = hijriMonthText ? `${hijriMonthText}${hijriYear ? ` ${hijriYear}` : ""} هـ` : "";
+    return `${formatMonth(month, locale)} م${hijriText ? ` - ${hijriText}` : ""}`;
+  } else {
+    const hijriText = hijriMonthText ? `${hijriMonthText}${hijriYear ? ` ${hijriYear}` : ""} H` : "";
+    return `${formatMonth(month, locale)} M${hijriText ? ` - ${hijriText}` : ""}`;
+  }
 }
 
 export function monthStartsBetween(startDate: string, endDate: string) {

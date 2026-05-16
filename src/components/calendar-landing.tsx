@@ -28,18 +28,21 @@ import {
   toIsoDate,
   weekdayLabels
 } from "@/lib/dates";
+import { ExportCalendarButton } from "./export-calendar-button";
 import type { AcademicYear, CalendarEvent, Category, LocaleMode } from "@/lib/types";
 
 type CalendarLandingProps = {
   academicYear: AcademicYear;
   categories: Category[];
   events: CalendarEvent[];
+  hijriOffset?: number;
 };
 
 export function CalendarLanding({
   academicYear,
   categories,
-  events
+  events,
+  hijriOffset = 0
 }: CalendarLandingProps) {
   const [locale, setLocale] = useState<LocaleMode>("ar");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -201,6 +204,7 @@ export function CalendarLanding({
           <div className="min-w-0 rounded-[32px] border border-[var(--line)] bg-white p-4 sm:p-8">
             <MonthCalendar
               events={events}
+              hijriOffset={hijriOffset}
               isNextDisabled={isAtLastMonth}
               isPreviousDisabled={isAtFirstMonth}
               locale={locale}
@@ -249,7 +253,7 @@ export function CalendarLanding({
           </aside>
         </section>
 
-        <AcademicSummary events={events} locale={locale} />
+        <AcademicSummary events={events} locale={locale} month={currentDate} />
       </section>
 
       {selectedDate ? (
@@ -257,6 +261,7 @@ export function CalendarLanding({
           date={selectedDate}
           events={selectedEvents}
           locale={locale}
+          hijriOffset={hijriOffset}
           onClose={() => setSelectedDate(null)}
         />
       ) : null}
@@ -313,6 +318,7 @@ function getAcademicYearLabel(name: string) {
 
 function MonthCalendar({
   events,
+  hijriOffset = 0,
   isNextDisabled,
   isPreviousDisabled,
   locale,
@@ -323,6 +329,7 @@ function MonthCalendar({
   selectedDate
 }: {
   events: CalendarEvent[];
+  hijriOffset?: number;
   isNextDisabled: boolean;
   isPreviousDisabled: boolean;
   locale: LocaleMode;
@@ -333,13 +340,13 @@ function MonthCalendar({
   selectedDate: string | null;
 }) {
   const cells = calendarCellsForMonth(month);
-  const monthTitle = formatMonthHeader(month, cells, locale);
+  const monthTitle = formatMonthHeader(month, cells, locale, hijriOffset);
   const previousLabel = locale === "ar" ? "الشهر السابق" : "Bulan sebelumnya";
   const nextLabel = locale === "ar" ? "الشهر التالي" : "Bulan berikutnya";
 
   return (
     <section className="overflow-hidden rounded-[32px] border border-[var(--line)] bg-white p-4 sm:p-6">
-      <div className="flex items-center justify-between gap-3 pb-5">
+      <div className="flex flex-col items-center justify-between gap-3 pb-5 sm:flex-row">
         <button
           aria-label={previousLabel}
           className="focus-ring inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--line)] bg-white text-[var(--ink)] transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-35"
@@ -350,7 +357,7 @@ function MonthCalendar({
         >
           {locale === "ar" ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
-        <h3 className="meta-display min-w-0 flex-1 truncate text-center text-base leading-tight text-[var(--ink)] sm:text-xl">
+        <h3 suppressHydrationWarning className="meta-display min-w-0 flex-1 truncate text-center text-base leading-tight text-[var(--ink)] sm:text-xl">
           {monthTitle}
         </h3>
         <button
@@ -364,6 +371,7 @@ function MonthCalendar({
           {locale === "ar" ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
         </button>
       </div>
+
       <div className="calendar-grid gap-2 bg-white sm:gap-3">
         {weekdayLabels[locale].map((day) => (
           <div
@@ -378,19 +386,22 @@ function MonthCalendar({
       <div className="calendar-grid mt-2 gap-2 sm:mt-3 sm:gap-3">
         {cells.map((cell) => {
           const dateIso = toIsoDate(cell);
-          const dominantEvent = getDominantEventForDate(events, dateIso);
+          const cellColor = getDominantCellColor(dateIso, events);
+          const isFriday = isFridayHoliday(cell);
           const inMonth = cell.getMonth() === month.getMonth();
 
           return (
             <CalendarCell
               date={cell}
               dateIso={dateIso}
-              eventColor={dominantEvent?.category?.color}
-              hasEvent={Boolean(dominantEvent)}
+              eventColor={!isFriday && cellColor ? cellColor : undefined}
+              hasEvent={Boolean(cellColor) || isFriday}
+              hijriOffset={hijriOffset}
               inMonth={inMonth}
               key={dateIso}
               onSelectDate={onSelectDate}
               selected={selectedDate === dateIso}
+              isFriday={isFriday}
             />
           );
         })}
@@ -404,19 +415,22 @@ function CalendarCell({
   dateIso,
   eventColor,
   hasEvent,
+  hijriOffset = 0,
   inMonth,
   onSelectDate,
-  selected
+  selected,
+  isFriday
 }: {
   date: Date;
   dateIso: string;
   eventColor?: string;
   hasEvent: boolean;
+  hijriOffset?: number;
   inMonth: boolean;
   onSelectDate: (date: string) => void;
   selected: boolean;
+  isFriday: boolean;
 }) {
-  const isFriday = isFridayHoliday(date);
   const hasActiveEvent = hasEvent && Boolean(eventColor);
 
   let cellStyle = "bg-white text-[var(--foreground)] hover:bg-neutral-50";
@@ -428,27 +442,33 @@ function CalendarCell({
     cellStyle = "bg-neutral-50 text-neutral-400 hover:bg-neutral-50";
   }
 
+  // Extract Hijri day number natively (supports Arabic numerals like ٧, ٨, ٩)
+  const hijriDay = formatHijriDay(dateIso, hijriOffset).trim();
+
   return (
     <button
-      className={`calendar-cell focus-ring rounded-2xl p-2 text-start transition sm:rounded-3xl sm:p-3 ${cellStyle} ${
+      className={`calendar-cell focus-ring rounded-xl sm:rounded-2xl p-2 text-start transition sm:p-3 ${cellStyle} ${
         selected ? "ring-2 ring-inset ring-[var(--accent)]" : ""
       }`}
       onClick={() => onSelectDate(dateIso)}
       style={!isFriday && hasActiveEvent ? { backgroundColor: eventColor ?? "#0064e0" } : undefined}
       type="button"
     >
-      <span className="flex h-full min-h-16 flex-col justify-between sm:min-h-20">
-        <span className="block text-lg font-semibold leading-none sm:text-2xl">
+      <div className="flex h-full min-h-16 flex-col items-center justify-center sm:min-h-20">
+        <span className="text-base font-bold sm:text-2xl">
           {date.getDate()}
         </span>
-        <span
-          className={`block text-[10px] font-semibold leading-none sm:text-xs ${
-            isFriday || hasActiveEvent ? "text-white/85" : "text-[var(--muted)]"
-          }`}
-        >
-          {formatHijriDay(dateIso)}
-        </span>
-      </span>
+        {hijriDay && (
+          <span
+            suppressHydrationWarning
+            className={`font-arabic text-xs ${
+              isFriday || hasActiveEvent ? "text-white/70" : "text-gray-500"
+            }`}
+          >
+            {hijriDay}
+          </span>
+        )}
+      </div>
     </button>
   );
 }
@@ -483,12 +503,12 @@ const summaryCategories: Array<{
   { id: "studentHoliday", labelAr: "إجازة الطلاب", labelId: "Libur Mahasiswa" }
 ];
 
-function AcademicSummary({ events, locale }: { events: CalendarEvent[]; locale: LocaleMode }) {
+function AcademicSummary({ events, locale, month }: { events: CalendarEvent[]; locale: LocaleMode; month: Date }) {
   const semesters = splitEventsBySemester(events);
 
   return (
     <section className="rounded-[32px] border border-[var(--line)] bg-white p-6 sm:p-8">
-      <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase text-[var(--muted)]">
             {locale === "ar" ? "ملخص التقويم" : "Ringkasan Kalender"}
@@ -497,6 +517,7 @@ function AcademicSummary({ events, locale }: { events: CalendarEvent[]; locale: 
             {locale === "ar" ? "ملخص السنة الأكاديمية" : "Ringkasan Tahun Akademik"}
           </h2>
         </div>
+        <ExportCalendarButton locale={locale} month={month} />
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
@@ -635,23 +656,29 @@ function DateDetail({
   date,
   events,
   locale,
+  hijriOffset = 0,
   onClose
 }: {
   date: string;
   events: CalendarEvent[];
   locale: LocaleMode;
+  hijriOffset?: number;
   onClose: () => void;
 }) {
+  // Determine which events should be shown in the modal after precedence filtering
+  const visibleEvents = getFilteredModalEvents(events, date);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/45 p-3 backdrop-blur-sm sm:items-center sm:justify-center">
       <section
-        className="max-h-[88vh] w-full max-w-xl overflow-auto rounded-[32px] border border-[var(--line)] bg-white p-6 sm:p-8"
+        className="max-h-[88vh] w-full max-w-xl overflow-auto rounded-[32px] bg-white p-6 sm:p-8"
+        style={{ border: "1px solid #dee3e9", boxShadow: "none" }}
         dir={locale === "ar" ? "rtl" : "ltr"}
       >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h2 className="meta-display text-2xl leading-tight text-[var(--ink)]">{formatDate(date, locale)}</h2>
-            <p className="mt-1 text-sm font-semibold text-[var(--muted)]">{formatHijri(date)}</p>
+            <p className="mt-1 text-sm font-semibold text-[var(--muted)]">{formatHijri(date, locale, hijriOffset)}</p>
           </div>
           <button
             className="focus-ring rounded-full border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)]"
@@ -663,12 +690,12 @@ function DateDetail({
         </div>
 
         <div className="space-y-3">
-          {events.length === 0 ? (
+          {visibleEvents.length === 0 ? (
             <p className="text-base leading-6 text-[var(--muted)]">
               {locale === "ar" ? "لا توجد أحداث في هذا التاريخ." : "Tidak ada event pada tanggal ini."}
             </p>
           ) : (
-            events.map((event) => (
+            visibleEvents.map((event) => (
               <article
                 className="rounded-2xl border border-[var(--line)] bg-white p-5"
                 key={event.id}
@@ -703,4 +730,114 @@ function DateDetail({
       </section>
     </div>
   );
+}
+
+/**
+ * Helper: determine if an event is Level 2 (high-priority specific event/holiday)
+ */
+function isLevel2Event(event: CalendarEvent): boolean {
+  const text = `${event.titleId} ${event.titleAr} ${event.category?.nameId ?? ""} ${event.category?.nameAr ?? ""}`.toLowerCase();
+  if (/idul|adha|عيد الأضحى|الأضحى|عيد/i.test(text)) return true;
+  if (/ramadan|ramadhan|رمضان/i.test(text)) return true;
+  if (/pegawai|staff|karyawan|الموظفين/i.test(text)) return true;
+  if (/mahasiswa|student|siswa|الطلاب/i.test(text)) return true;
+  const sum = summarizeEvent(event);
+  if (sum === "staffHoliday" || sum === "studentHoliday") return true;
+  return false;
+}
+
+/**
+ * Helper: calculate days between two dates (gross total duration)
+ */
+function daysBetween(startIso: string, endIso?: string): number {
+  const start = new Date(startIso);
+  const end = endIso ? new Date(endIso) : start;
+  return Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+}
+
+/**
+ * getDominantCellColor(dateIso, events)
+ * Returns the hex color to use for a calendar cell.
+ * Rules: Friday absolute -> red; single level2 -> that event color;
+ * multiple level2 -> dominant by longest total duration; otherwise base layer if present; else null
+ */
+function getDominantCellColor(dateIso: string, events: CalendarEvent[]): string | null {
+  const dateObj = new Date(dateIso);
+  // Rule A: Friday absolute
+  if (isFridayHoliday(dateObj)) {
+    return "#e41e3f";
+  }
+
+  // events touching this date
+  const onDate = events.filter((ev) => eventTouchesDate(ev, dateIso));
+
+  // Level2 candidates
+  const level2 = onDate.filter(isLevel2Event);
+
+  if (level2.length === 1) {
+    return level2[0].category?.color ?? null;
+  }
+
+  if (level2.length > 1) {
+    // compute total gross duration of each overlapping event (full event range)
+    let dominant = level2[0];
+    let maxDays = daysBetween(dominant.startDate, dominant.endDate ?? dominant.startDate);
+
+    for (const ev of level2.slice(1)) {
+      const d = daysBetween(ev.startDate, ev.endDate ?? ev.startDate);
+      if (d > maxDays) {
+        dominant = ev;
+        maxDays = d;
+      }
+    }
+
+    return dominant.category?.color ?? null;
+  }
+
+  // No Level2 present -> show base layer (Level3) if exists
+  const base = onDate.find((ev) => summarizeEvent(ev) === "academicActivity");
+  if (base) {
+    return base.category?.color ?? null;
+  }
+
+  return null;
+}
+
+/**
+ * getFilteredModalEvents(events, dateIso)
+ * Returns the array of events to show in the modal following precedence rules.
+ * - If Friday -> show Friday-only synthetic card
+ * - If any Level2 events -> show all Level2 events (coexistence allowed)
+ * - Otherwise show events (base layer) as-is
+ */
+function getFilteredModalEvents(events: CalendarEvent[], dateIso: string): CalendarEvent[] {
+  const dateObj = new Date(dateIso);
+  if (isFridayHoliday(dateObj)) {
+    return [
+      {
+        id: `friday-${dateIso}`,
+        academicYearId: "",
+        categoryId: null,
+        titleAr: "عطلة الجمعة",
+        titleId: "Libur Jumat",
+        descriptionAr: null,
+        descriptionId: null,
+        startDate: dateIso,
+        endDate: null,
+        isImportant: true,
+        category: { id: "weekly", nameAr: "عطلة", nameId: "Libur", color: "#e41e3f" }
+      }
+    ];
+  }
+
+  const onDate = events.filter((ev) => eventTouchesDate(ev, dateIso));
+  const level2 = onDate.filter(isLevel2Event);
+
+  if (level2.length > 0) {
+    // Rule C: If multiple Level2 intersect, show all Level2 cards (coexistence)
+    return level2;
+  }
+
+  // No Level1/2 -> return whatever is present (base layer shows)
+  return onDate;
 }

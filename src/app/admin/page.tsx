@@ -12,6 +12,7 @@ import {
 } from "@/app/admin/actions";
 import { EditYearButton } from "@/components/edit-year-button";
 import { FormSubmitButton } from "@/components/form-submit-button";
+import { HijriOffsetSelect } from "@/components/hijri-offset-select";
 import { UserMenu } from "@/components/user-menu";
 import { requireAdmin } from "@/lib/admin";
 import { formatDate } from "@/lib/dates";
@@ -35,6 +36,7 @@ export default async function AdminPage({
   let activeYear: AcademicYear | null = null;
   let categories: Category[] = [];
   let events: CalendarEvent[] = [];
+  let hijriOffset = 0;
 
   try {
     const data = await getAdminData();
@@ -42,6 +44,7 @@ export default async function AdminPage({
     activeYear = data.activeYear;
     categories = data.categories;
     events = data.events;
+    hijriOffset = data.hijriOffset;
   } catch (error) {
     isServerConnected = false;
     connectionMessage =
@@ -74,6 +77,7 @@ export default async function AdminPage({
                 />
                 <span>{isServerConnected ? "Terhubung" : "Terputus"}</span>
               </div>
+              <HijriOffsetSelect initialOffset={hijriOffset} />
               <Link
                 className="focus-ring inline-flex items-center gap-2 rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800"
                 href="/"
