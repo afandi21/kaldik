@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarPlus, Database, Home, Plus } from "lucide-react";
+import { CalendarPlus, Database, Plus } from "lucide-react";
 import {
   createAcademicYear,
   createCategory,
@@ -12,8 +12,7 @@ import {
 } from "@/app/admin/actions";
 import { EditYearButton } from "@/components/edit-year-button";
 import { FormSubmitButton } from "@/components/form-submit-button";
-import { HijriOffsetSelect } from "@/components/hijri-offset-select";
-import { UserMenu } from "@/components/user-menu";
+import { Navbar } from "@/components/navbar";
 import { requireAdmin } from "@/lib/admin";
 import { formatDate } from "@/lib/dates";
 import { getAdminData } from "@/lib/db";
@@ -61,51 +60,38 @@ export default async function AdminPage({
 
   return (
     <main className="min-h-screen bg-white text-[var(--foreground)]">
-      <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-white/95 backdrop-blur">
-        <section className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm font-medium text-[var(--muted)]">Dashboard Admin</p>
-              <h1 className="meta-display mt-1 text-3xl leading-tight text-[var(--ink)]">Kalender Akademik</h1>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs font-semibold">
-                <span
-                  className={`inline-block h-2.5 w-2.5 rounded-full ${
-                    isServerConnected ? "bg-emerald-500" : "bg-red-600"
-                  }`}
-                />
-                <span>{isServerConnected ? "Terhubung" : "Terputus"}</span>
-              </div>
-              <HijriOffsetSelect initialOffset={hijriOffset} />
-              <Link
-                className="focus-ring inline-flex items-center gap-2 rounded-full bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-800"
-                href="/"
-              >
-                <Home size={16} />
-                Lihat Landing
-              </Link>
-              <UserMenu />
+      <Navbar locale="id" hijriOffset={hijriOffset} isAdminPage />
+      
+      <section className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-8 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-4 py-2 text-xs font-semibold">
+              <span
+                className={`inline-block h-2.5 w-2.5 rounded-full ${
+                  isServerConnected ? "bg-emerald-500" : "bg-red-600"
+                }`}
+              />
+              <span>{isServerConnected ? "Database Terhubung" : "Database Terputus"}</span>
             </div>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto rounded-full border border-[var(--line)] bg-white p-1">
+          <div className="flex gap-2 overflow-x-auto rounded-full border border-[var(--line)] bg-neutral-50 p-1">
             {tabs.map((tab) => (
               <Link
                 key={tab.id}
                 href={`/admin?tab=${tab.id}`}
-                className={`rounded-full px-5 py-2.5 text-sm font-semibold whitespace-nowrap transition ${
+                className={`rounded-full px-5 py-2 text-sm font-bold whitespace-nowrap transition ${
                   currentTab === tab.id
-                    ? "bg-black text-white"
-                    : "text-[var(--muted)] hover:bg-neutral-50 hover:text-[var(--ink)]"
+                    ? "bg-black text-white shadow-lg shadow-black/10"
+                    : "text-[var(--muted)] hover:bg-white hover:text-[var(--ink)]"
                 }`}
               >
                 {tab.label}
               </Link>
             ))}
           </div>
-        </section>
-      </header>
+        </div>
+      </section>
 
       <section className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
         {!isServerConnected && (

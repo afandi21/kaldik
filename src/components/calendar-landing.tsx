@@ -1,14 +1,13 @@
 "use client";
 
 import {
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Languages,
-  LogIn,
   Sparkles,
   Star
 } from "lucide-react";
+import { Navbar } from "./navbar";
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -99,58 +98,12 @@ export function CalendarLanding({
 
   return (
     <main dir={dir} className="page-shell min-h-screen bg-white text-[var(--foreground)]">
+      <Navbar 
+        locale={locale} 
+        setLocale={setLocale} 
+        hijriOffset={hijriOffset} 
+      />
       <section className="mx-auto flex w-full max-w-[1480px] flex-col gap-20 px-4 py-4 sm:px-6 lg:px-8">
-        <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-white/95 py-3 backdrop-blur">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] text-[var(--ink)]">
-                <CalendarDays size={18} />
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase text-[var(--muted)]">
-                  {academicYear.name}
-                </p>
-                <h1 className="meta-display text-xl leading-tight text-[var(--ink)] sm:text-2xl">
-                  {locale === "ar" ? "التقويم الأكاديمي" : "Kalender Akademik"}
-                </h1>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
-              <div className="inline-flex w-full rounded-full border border-[var(--line)] bg-white p-1 sm:w-auto">
-                <button
-                  className={`focus-ring flex-1 rounded-full px-4 py-2 text-sm font-semibold sm:flex-none ${
-                    locale === "ar"
-                      ? "bg-[var(--ink)] text-white"
-                      : "text-[var(--muted)] hover:text-[var(--ink)]"
-                  }`}
-                  onClick={() => setLocale("ar")}
-                  type="button"
-                >
-                  عربي
-                </button>
-                <button
-                  className={`focus-ring flex-1 rounded-full px-4 py-2 text-sm font-semibold sm:flex-none ${
-                    locale === "id"
-                      ? "bg-[var(--ink)] text-white"
-                      : "text-[var(--muted)] hover:text-[var(--ink)]"
-                  }`}
-                  onClick={() => setLocale("id")}
-                  type="button"
-                >
-                  Indonesia
-                </button>
-              </div>
-              <Link
-                className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--ink)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:w-auto"
-                href="/admin/login"
-              >
-                <LogIn size={16} />
-                <span>{locale === "ar" ? "دخول المدير" : "Admin"}</span>
-              </Link>
-            </div>
-          </div>
-        </header>
 
         <HeroShowcase academicYear={academicYear} locale={locale} />
 

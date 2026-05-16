@@ -6,7 +6,7 @@ export const weekdayLabels: Record<LocaleMode, string[]> = {
 };
 
 const monthFormatters: Record<LocaleMode, Intl.DateTimeFormat> = {
-  ar: new Intl.DateTimeFormat("ar-SA-u-nu-latn", { month: "long", year: "numeric" }),
+  ar: new Intl.DateTimeFormat("ar-SA", { month: "long", year: "numeric" }),
   id: new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" })
 };
 
@@ -30,7 +30,7 @@ const hijriMonthFormatters: Record<LocaleMode, Intl.DateTimeFormat> = {
 
 const hijriYearFormatters: Record<LocaleMode, Intl.DateTimeFormat> = {
   ar: new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-arab", { year: "numeric" }),
-  id: new Intl.DateTimeFormat("id-ID-u-ca-islamic-umalqura-nu-arab", { year: "numeric" })
+  id: new Intl.DateTimeFormat("id-ID-u-ca-islamic-umalqura-nu-latn", { year: "numeric" })
 };
 
 const hijriDayFormatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-arab", {
@@ -267,10 +267,10 @@ export function formatMonthHeader(month: Date, cells: Date[], locale: LocaleMode
   const hijriMonthText = Array.from(hijriMonths).join("/");
   
   if (locale === "ar") {
-    const hijriText = hijriMonthText ? `${hijriMonthText}${hijriYear ? ` ${hijriYear}` : ""} هـ` : "";
+    const hijriText = hijriMonthText ? `${hijriMonthText}${hijriYear ? ` ${hijriYear}` : ""}` : "";
     return `${formatMonth(month, locale)} م${hijriText ? ` - ${hijriText}` : ""}`;
   } else {
-    const hijriText = hijriMonthText ? `${hijriMonthText}${hijriYear ? ` ${hijriYear}` : ""} H` : "";
+    const hijriText = hijriMonthText ? `${hijriMonthText}${hijriYear ? ` ${hijriYear}` : ""}` : "";
     return `${formatMonth(month, locale)} M${hijriText ? ` - ${hijriText}` : ""}`;
   }
 }
