@@ -1,7 +1,28 @@
 import "server-only";
-import pg from "pg";
+import pg, { Pool } from "pg";
 import type { AcademicYear, CalendarEvent, Category } from "@/lib/types";
-import { getPool } from "@/lib/pool";
+
+declare global {
+  var pgPool: Pool | undefined;
+}
+
+const connectionString = process.env.DATABASE_URL ?? process.env.DIRECT_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL belum dikonfigurasi.");
+}
+
+const pool = globalThis.pgPool || new Pool({
+  connectionString,
+  max: 4,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 20000,
+  ssl: { rejectUnauthorized: false }
+});
+
+if (process.env.NODE_ENV !== "production") {
+  globalThis.pgPool = pool;
+}
 
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -69,19 +90,9 @@ function mapEvent(row: Record<string, unknown>): CalendarEvent {
   };
 }
 
-function getRequiredPool() {
-  const pool = getPool();
-  if (!pool) {
-    throw new Error("DATABASE_URL belum dikonfigurasi.");
-  }
-  return pool;
-}
-
 export async function getCalendarData() {
-  const client = getRequiredPool();
-
   try {
-    const selectedYear = await client.query(
+    const selectedYear = await pool.query(
       `select *
        from academic_years
        order by is_active desc, start_date desc, created_at desc
@@ -98,8 +109,8 @@ export async function getCalendarData() {
     }
 
     const [categories, events, settings] = await Promise.all([
-      client.query("select * from categories order by name_id asc"),
-      client.query(
+      pool.query("select * from categories order by name_id asc"),
+      pool.query(
         `select
           e.*,
           c.name_ar as category_name_ar,
@@ -111,7 +122,7 @@ export async function getCalendarData() {
         order by e.start_date asc, e.title_id asc`,
         [year.id]
       ),
-      client.query("select value from system_settings where key = 'HIJRI_OFFSET'")
+      pool.query("select value from system_settings where key = 'HIJRI_OFFSET'")
     ]);
 
     const hijriOffset = parseInt(settings.rows[0]?.value ?? "0", 10);
@@ -129,10 +140,8 @@ export async function getCalendarData() {
 }
 
 export async function getAdminData() {
-  const client = getRequiredPool();
-
   try {
-    const yearsResult = await client.query(
+    const yearsResult = await pool.query(
       "select * from academic_years order by start_date desc, created_at desc"
     );
     const academicYears = yearsResult.rows.map(mapYear);
@@ -147,8 +156,8 @@ export async function getAdminData() {
     }
 
     const [categories, events, settings] = await Promise.all([
-      client.query("select * from categories order by name_id asc"),
-      client.query(
+      pool.query("select * from categories order by name_id asc"),
+      pool.query(
         `select
           e.*,
           c.name_ar as category_name_ar,
@@ -160,7 +169,7 @@ export async function getAdminData() {
         order by e.start_date asc, e.title_id asc`,
         [activeYear.id]
       ),
-      client.query("select value from system_settings where key = 'HIJRI_OFFSET'")
+      pool.query("select value from system_settings where key = 'HIJRI_OFFSET'")
     ]);
 
     const hijriOffset = parseInt(settings.rows[0]?.value ?? "0", 10);
@@ -182,8 +191,6 @@ export async function queryDatabase<T extends pg.QueryResultRow = pg.QueryResult
   text: string,
   values: Array<string | boolean | null> = []
 ) {
-  const client = getRequiredPool();
-
-  const result = await client.query<T>(text, values);
+  const result = await pool.query<T>(text, values);
   return result.rows;
 }
